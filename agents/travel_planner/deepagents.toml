@@ -1,0 +1,21 @@
+[agent]
+name = "cisco-travel-planner"
+model = "anthropic:claude-sonnet-4-6"
+
+# [sandbox] is optional. Omit if not needed for skills or code execution.
+# [sandbox]
+# provider = "langsmith"   # langsmith | daytona | modal | runloop
+# scope = "thread"         # thread | assistant
+
+# [auth] is optional. Add to enable user authentication.
+# [auth]
+# provider = "supabase"   # supabase | clerk | anonymous
+
+# [frontend] is optional. Add to ship a bundled chat UI on the same
+# deployment as the agent. Requires [auth] — pick "supabase" or
+# "clerk" for real per-user auth, or set provider = "anonymous" to
+# leave the API open to anyone with the deploy URL (private/dev
+# deploys only).
+# [frontend]
+# enabled = true
+# app_name = "My Agent"
