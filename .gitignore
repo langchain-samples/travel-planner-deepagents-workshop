@@ -174,3 +174,8 @@ cython_debug/
 vertexCred.json
 
 .idea
+
+# Agent runtime outputs written to disk by FilesystemBackend during `langgraph dev`.
+# Source agent files (AGENTS.md, SKILL.md in subfolders) are not matched.
+/agents/travel_planner/*.md
+!/agents/travel_planner/AGENTS.md
