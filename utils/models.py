@@ -1,60 +1,68 @@
+"""Centralized chat model factory for the workshop.
+
+Auto-detects Azure OpenAI when AZURE_OPENAI_ENDPOINT is set in the environment;
+otherwise falls back to standard OpenAI via init_chat_model. Switch providers
+by editing .env, not by editing this file.
+
+Required env vars per mode:
+    Azure (when AZURE_OPENAI_ENDPOINT is set):
+        AZURE_OPENAI_API_KEY
+        AZURE_OPENAI_ENDPOINT
+        AZURE_OPENAI_DEPLOYMENT
+        AZURE_OPENAI_API_VERSION    (optional, defaults to 2025-03-01-preview)
+    OpenAI (default):
+        OPENAI_API_KEY
+
+Bedrock / Vertex examples are kept commented below for reference.
 """
-Model Initialization File
 
-This file configures the LLM model to be used throughout the application.
+import os
 
-Default Configuration:
-- The default provider is OpenAI (o3-mini model)
-- You can also switch to Anthropic by uncommenting the alternative model line
-
-Alternative Providers:
-To use a different LLM provider, follow these steps:
-1. Comment out the "Default Models" section below
-2. Uncomment the section for your desired provider:
-   - Azure OpenAI: Requires AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT
-   - AWS Bedrock: Requires AWS credentials and configuration
-   - Google Vertex AI: Requires GOOGLE_APPLICATION_CREDENTIALS setup
-3. Follow the setup instructions within each section
-"""
-
-"""Default Models"""
 from dotenv import load_dotenv
+
 load_dotenv(dotenv_path="../../.env", override=True)
+
 from langchain.chat_models import init_chat_model
+from langchain_openai import AzureChatOpenAI
 
-model = init_chat_model("openai:gpt-5.4")
-
-# Use Anthropic instead of OpenAI
-# model = init_chat_model("anthropic:claude-haiku-4-5")
+DEFAULT_OPENAI_MODEL = "openai:gpt-5.4"
 
 
-"""AZURE OpenAI Version"""
-# from langchain_openai import AzureChatOpenAI
-# # from langchain_anthropic import ChatAnthropic
-# # from langchain_google_vertexai import ChatVertexAI
-# from azure.identity import InteractiveBrowserCredential
+def _azure_mode() -> bool:
+    """True if Azure OpenAI env vars indicate we should use AzureChatOpenAI."""
+    return bool(os.getenv("AZURE_OPENAI_ENDPOINT"))
 
-# credential = InteractiveBrowserCredential()
 
-# def get_token():
-#     token = credential.get_token("https://cognitiveservices.azure.com/.default")
-#     return token.token
+def get_model(name: str | None = None):
+    """Return a chat model based on the active provider mode.
 
-# For AzureOpenAI, make sure you set AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT
+    In Azure mode the `name` argument is ignored because Azure routes by
+    deployment, not by model name. Set AZURE_OPENAI_DEPLOYMENT to target a
+    different deployment.
 
-# Azure OpenAI: Using Environment Variables
-# AZURE_OPENAI_GPT_4O = AzureChatOpenAI(
-#     azure_deployment="gpt-4o",
-#     streaming=True
-# )
+    In OpenAI mode, `name` defaults to DEFAULT_OPENAI_MODEL.
+    """
+    if _azure_mode():
+        required = ("AZURE_OPENAI_API_KEY", "AZURE_OPENAI_DEPLOYMENT")
+        missing = [v for v in required if not os.getenv(v)]
+        if missing:
+            raise RuntimeError(
+                f"Azure mode detected (AZURE_OPENAI_ENDPOINT is set) but missing required env vars: {missing}. "
+                "Either set them in .env, or unset AZURE_OPENAI_ENDPOINT to fall back to standard OpenAI."
+            )
+        return AzureChatOpenAI(
+            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+            azure_deployment=os.environ["AZURE_OPENAI_DEPLOYMENT"],
+            api_version=os.environ.get(
+                "AZURE_OPENAI_API_VERSION", "2025-03-01-preview"
+            ),
+            api_key=os.environ["AZURE_OPENAI_API_KEY"],
+        )
+    return init_chat_model(name or DEFAULT_OPENAI_MODEL)
 
-# Azure OpenAI: Using Azure AD
-# AZURE_OPENAI_GPT_4O = AzureChatOpenAI(
-#     api_version="2024-03-01-preview",
-#     azure_endpoint="https://deployment.openai.azure.com/",
-#     azure_deployment="gpt-4o",
-#     azure_ad_token_provider=get_token
-# )
+
+# Main agent model. Imported throughout the workshop as `from utils.models import model`.
+model = get_model()
 
 
 """Bedrock Version"""
@@ -71,7 +79,7 @@ model = init_chat_model("openai:gpt-5.4")
 
 # model = ChatBedrockConverse(
 #     aws_access_key_id=AWS_ACCESS_KEY_ID,
-#     aws_secret_access_key=AWS_SECRET_ACCESS_KEY, 
+#     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
 #     region_name=AWS_REGION_NAME,
 #     provider="anthropic",
 #     model_id=AWS_MODEL_ARN
@@ -79,7 +87,7 @@ model = init_chat_model("openai:gpt-5.4")
 
 
 """Google Vertex AI version"""
-# Make sure you have your vertex ai credentials setup and your GOOGLE_APPLICATION_CREDENTIALS are pointing to the JSON file. 
+# Make sure you have your vertex ai credentials setup and your GOOGLE_APPLICATION_CREDENTIALS are pointing to the JSON file.
 
 # import os
 # from pathlib import Path
@@ -87,7 +95,6 @@ model = init_chat_model("openai:gpt-5.4")
 # from langchain.chat_models import init_chat_model
 
 # # Find project root and load .env
-# # Use __file__ to get the location of this file, then go up two directories to project root
 # project_root = Path(__file__).resolve().parent.parent
 # load_dotenv(dotenv_path=project_root / ".env", override=True)
 

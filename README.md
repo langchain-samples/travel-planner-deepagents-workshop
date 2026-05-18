@@ -105,16 +105,22 @@ This starts an API server at `http://localhost:2024` and prints a LangGraph Stud
 
 ## Model Configuration
 
-Model selection is centralized in `utils/models.py`. The default is OpenAI (`openai:gpt-5.4`); the file contains commented-out blocks for Azure OpenAI, AWS Bedrock, and Google Vertex AI — uncomment the section matching your provider and fill in the relevant env vars in `.env`.
+Model selection is centralized in `utils/models.py`. The default is OpenAI (`openai:gpt-5.4`). To use a different provider, edit `.env` only — `utils/models.py` auto-detects Azure OpenAI when `AZURE_OPENAI_ENDPOINT` is set. AWS Bedrock and Google Vertex AI examples are kept as commented blocks in `utils/models.py` for reference.
 
-The notebook's Part 10 evaluations call `init_chat_model()` directly to swap models for the comparison (`openai:gpt-5.4` vs `openai:gpt-4.1-mini`) and use `model` from `utils/models.py` for the LLM-as-judge. If your provider proxies OpenAI through APIM, point `OPENAI_BASE_URL` at the proxy so all three model names resolve through it.
+The notebook's Part 10 evaluations call `get_model()` (from `utils/models.py`), so the eval section automatically inherits the active provider — no code edits needed.
 
-### Azure OpenAI
+### Azure OpenAI / APIM gateway (Azure URL shape)
+
+Setting `AZURE_OPENAI_ENDPOINT` in `.env` auto-switches `utils/models.py` to `AzureChatOpenAI`. No code changes required. Required vars:
+
 ```
-AZURE_OPENAI_API_KEY=...
-AZURE_OPENAI_ENDPOINT=...
-AZURE_OPENAI_API_VERSION=2024-03-01-preview
+AZURE_OPENAI_API_KEY=<your-key>
+AZURE_OPENAI_ENDPOINT=<your-endpoint>
+AZURE_OPENAI_API_VERSION=2025-03-01-preview
+AZURE_OPENAI_DEPLOYMENT=<deployment-name>
 ```
+
+Note: Part 10's two-model comparison targets the same Azure deployment in this mode — LangSmith renders two distinct experiments (different `experiment_prefix` labels), but the underlying compute is identical. For true cross-model comparison, use standard OpenAI credentials.
 
 ### AWS Bedrock
 ```
