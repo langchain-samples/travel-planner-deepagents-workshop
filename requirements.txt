@@ -175,7 +175,7 @@ pytest-socket==0.7.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.2.1
 python-json-logger==4.0.0
-python-multipart==0.0.26
+python-multipart==0.0.27
 pytz==2025.2
 pyyaml==6.0.3
 pyzmq==27.1.0
